@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hoax Detection Intelligence Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#2563eb;--secondary:#7c3aed;--success:#10b981;--danger:#ef4444;--warning:#f59e0b;--dark:#0f172a;--card:#ffffff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:#f1f5f9;color:var(--text);}
+
+/* SIDEBAR */
+.sidebar{position:fixed;top:0;left:0;width:270px;height:100vh;background:linear-gradient(180deg,#0f172a,#111827);color:white;padding:24px;overflow-y:auto;z-index:1000;}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:40px;}
+.brand-logo{width:45px;height:45px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#7c3aed);display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;}
+.brand-title{font-size:18px;font-weight:700;}
+.brand-subtitle{font-size:12px;color:#94a3b8;}
+.menu-section{color:#64748b;font-size:11px;font-weight:700;letter-spacing:1px;margin-top:24px;margin-bottom:10px;}
+.menu-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;text-decoration:none;color:#cbd5e1;margin-bottom:6px;transition:.3s;}
+.menu-item:hover{background:rgba(255,255,255,.06);color:white;}
+.menu-item.active{background:linear-gradient(135deg,#2563eb,#7c3aed);color:white;}
+
+/* MAIN */
+.main{margin-left:270px;min-height:100vh;padding:30px;}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,#1e40af,#2563eb 50%,#7c3aed);color:white;border-radius:24px;padding:40px 48px;margin-bottom:28px;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(37,99,235,0.25);}
+.hero::before{content:"";position:absolute;width:260px;height:260px;background:rgba(255,255,255,.07);border-radius:50%;right:-60px;top:-80px;}
+.hero::after{content:"";position:absolute;width:160px;height:160px;background:rgba(255,255,255,.05);border-radius:50%;left:-50px;bottom:-50px;}
+.hero-badge{display:inline-block;background:rgba(255,255,255,.2);color:white;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;letter-spacing:1px;margin-bottom:14px;}
+.hero h2{font-size:34px;font-weight:800;margin-bottom:10px;position:relative;z-index:2;}
+.hero p{max-width:540px;opacity:.9;font-size:14px;line-height:1.7;position:relative;z-index:2;}
+.btn-run{background:white;color:#2563eb;border:none;border-radius:12px;padding:12px 24px;font-weight:700;margin-top:15px;transition:.3s;position:relative;z-index:2;}
+.btn-run:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.15);}
+
+/* SECTION TITLE */
+.section-title{font-size:20px;font-weight:800;margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+
+/* METRIC CARDS */
+.metric-card{background:white;border-radius:16px;padding:24px;border:1.5px solid #e2e8f0;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.metric-label{color:#64748b;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;}
+.metric-value{font-size:2.2rem;font-weight:800;color:#1e293b;}
+
+/* EVAL CARDS */
+.eval-card{border-radius:16px;padding:20px;text-align:center;}
+.eval-label{font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:8px;}
+.eval-value{font-size:2rem;font-weight:800;}
+
+/* TABS */
+.nav-tabs{border-bottom:2px solid #e2e8f0;margin-bottom:24px;}
+.nav-tabs .nav-link{color:#64748b;font-weight:700;border:none;padding:10px 20px;border-radius:0;}
+.nav-tabs .nav-link.active{color:#2563eb;border-bottom:2px solid #2563eb;background:transparent;}
+
+/* CHART & TABLE CARDS */
+.chart-card,.table-card{background:white;border-radius:20px;padding:25px;box-shadow:0 4px 16px rgba(0,0,0,0.06);border:1.5px solid #e2e8f0;}
+.chart-title{font-size:15px;font-weight:700;margin-bottom:20px;color:#1e293b;}
+canvas{max-height:300px;}
+
+/* BADGES */
+.badge-hoax{background:#fee2e2;color:#dc2626;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;}
+.badge-valid{background:#dcfce7;color:#16a34a;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;}
+
+/* TABLE */
+.table-container{max-height:400px;overflow-y:auto;}
+.table thead{position:sticky;top:0;background:white;z-index:10;}
+.table th{color:#475569;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+.table td{vertical-align:middle;font-size:13px;}
+
+/* EMPTY STATE */
+.empty-state{background:white;border-radius:20px;padding:60px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);border:1.5px solid #e2e8f0;}
+
+/* WARNING BOX */
+.warn-box{background:#fffbeb;border:1.5px solid #fde68a;border-radius:14px;padding:16px 20px;color:#92400e;font-size:14px;}
+
+@media(max-width:992px){.sidebar{display:none;}.main{margin-left:0;padding:20px;}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="brand">
+        <div class="brand-logo">AI</div>
+        <div>
+            <div class="brand-title">Hoax Detection</div>
+            <div class="brand-subtitle">Intelligence System</div>
+        </div>
+    </div>
+    <div class="menu-section">GENERAL</div>
+    <a href="/" class="menu-item active">📊 Dashboard</a>
+    <a href="/run" class="menu-item">⚙️ Run Pipeline</a>
+    <div class="menu-section">TOOLS</div>
+    <a href="/checker" class="menu-item">🔍 Hoax Checker</a>
+    <div class="menu-section">ACCOUNT</div>
+    <a href="/logout" class="menu-item" style="color:#f87171;">🚪 Logout</a>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+    <!-- HERO -->
+    <div class="hero">
+        <div class="hero-badge">MACHINE LEARNING · NLP · KLASIFIKASI</div>
+        <h2>Hoax Detection Intelligence 🛡️</h2>
+        <p>Sistem deteksi berita hoaks berbasis AI dengan Naive Bayes & SVM, dilengkapi analytics dataset dan real-time checker.</p>
+        <button onclick="window.location.href='/run'" class="btn-run">⚙️ Run Pipeline</button>
+    </div>
+
+    <!-- RINGKASAN DATASET -->
+    <div class="section-title">📊 Ringkasan Dataset</div>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-label">📁 Total Data</div>
+                <div class="metric-value">{{ stats.total | default(0) | int }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-label">⚠️ Hoaks</div>
+                <div class="metric-value" style="color:#ef4444;">{{ stats.hoaks | default(0) | int }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-label">✅ Valid</div>
+                <div class="metric-value" style="color:#16a34a;">{{ stats.valid | default(0) | int }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-label">📈 Hoax Rate</div>
+                <div class="metric-value" style="color:#7c3aed;">{{ stats.rate | default(0) }}%</div>
+            </div>
+        </div>
+    </div>
+
+    <hr style="border-color:#e2e8f0;margin-bottom:28px;">
+
+    <!-- EVALUASI MODEL -->
+    <div class="section-title">🎯 Hasil Evaluasi Model Klasifikasi</div>
+
+    {% if hasil and hasil.acc_nb %}
+
+    <!-- TABS -->
+    <ul class="nav nav-tabs" id="evalTab">
+        <li class="nav-item">
+            <button class="nav-link active" onclick="switchTab('nb', this)">🤖 Naive Bayes</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" onclick="switchTab('svm', this)">⚡ SVM</button>
+        </li>
+    </ul>
+
+    <!-- TAB: NAIVE BAYES -->
+    <div id="tab-nb">
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="eval-card" style="background:#eff6ff;border:1.5px solid #bfdbfe;">
+                    <div class="eval-label" style="color:#3b82f6;">ACCURACY</div>
+                    <div class="eval-value" style="color:#1e40af;">{{ (hasil.acc_nb * 100) | round(2) }}%</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="eval-card" style="background:#f0fdf4;border:1.5px solid #bbf7d0;">
+                    <div class="eval-label" style="color:#16a34a;">PRECISION</div>
+                    <div class="eval-value" style="color:#166534;">{{ (hasil.prec_nb * 100) | round(2) }}%</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="eval-card" style="background:#fdf4ff;border:1.5px solid #e9d5ff;">
+                    <div class="eval-label" style="color:#9333ea;">RECALL</div>
+                    <div class="eval-value" style="color:#6b21a8;">{{ (hasil.rec_nb * 100) | round(2) }}%</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="eval-card" style="background:#fff7ed;border:1.5px solid #fed7aa;">
+                    <div class="eval-label" style="color:#ea580c;">F1-SCORE</div>
+                    <div class="eval-value" style="color:#9a3412;">{{ (hasil.f1_nb * 100) | round(2) }}%</div>
+                </div>
+            </div>
+        </div>
+        <!-- Confusion Matrix NB -->
+        <div class="chart-card mb-4">
+            <div class="chart-title">Confusion Matrix — Naive Bayes</div>
+            <canvas id="cmNB" style="max-height:260px;"></canvas>
+        </div>
+    </div>
+
+    <!-- TAB: SVM -->
+    <div id="tab-svm" style="display:none;">
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="eval-card" style="background:#eff6ff;border:1.5px solid #bfdbfe;">
+                    <div class="eval-label" style="color:#3b82f6;">ACCURACY</div>
+                    <div class="eval-value" style="color:#1e40af;">{{ (hasil.acc_svm * 100) | round(2) }}%</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="eval-card" style="background:#f0fdf4;border:1.5px solid #bbf7d0;">
+                    <div class="eval-label" style="color:#16a34a;">PRECISION</div>
+                    <div class="eval-value" style="color:#166534;">{{ (hasil.prec_svm * 100) | round(2) }}%</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="eval-card" style="background:#fdf4ff;border:1.5px solid #e9d5ff;">
+                    <div class="eval-label" style="color:#9333ea;">RECALL</div>
+                    <div class="eval-value" style="color:#6b21a8;">{{ (hasil.rec_svm * 100) | round(2) }}%</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="eval-card" style="background:#fff7ed;border:1.5px solid #fed7aa;">
+                    <div class="eval-label" style="color:#ea580c;">F1-SCORE</div>
+                    <div class="eval-value" style="color:#9a3412;">{{ (hasil.f1_svm * 100) | round(2) }}%</div>
+                </div>
+            </div>
+        </div>
+        <!-- Confusion Matrix SVM -->
+        <div class="chart-card mb-4">
+            <div class="chart-title">Confusion Matrix — SVM</div>
+            <canvas id="cmSVM" style="max-height:260px;"></canvas>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="warn-box mb-4">
+        ⚠️ Belum ada hasil evaluasi. Klik <strong>Run Pipeline</strong> terlebih dahulu untuk melihat metrik Accuracy, Precision, Recall, F1-Score, dan Confusion Matrix.
+    </div>
+    {% endif %}
+
+    <hr style="border-color:#e2e8f0;margin-bottom:28px;">
+
+    <!-- CHART DISTRIBUSI & AKURASI -->
+    <div class="section-title">📈 Analitik Dataset</div>
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <div class="chart-title">Distribusi Label Dataset</div>
+                <canvas id="chartDistribusi"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <div class="chart-title">Perbandingan Akurasi Model</div>
+                <canvas id="chartAkurasi"></canvas>
+            </div>
+        </div>
+    </div>
+
+   <!-- TABEL DATA PIPELINE -->
+    {% if hasil and hasil.data %}
+    <hr style="border-color:#e2e8f0;margin-bottom:28px;">
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="table-card">
+                <div class="chart-title">Dataset Sample</div>
+                <div class="table-container">
+                    <table class="table table-hover">
+                        <thead><tr><th>No</th><th>Text</th><th>Label</th></tr></thead>
+                        <tbody>
+                        {% for row in hasil.data %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ row.text[:80] if row.text else '-' }}...</td>
+                            <td>
+                                {% if row.label == 1 %}<span class="badge-hoax">Hoaks</span>
+                                {% else %}<span class="badge-valid">Valid</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="table-card">
+                <div class="chart-title">Realtime News Analysis</div>
+                <div class="table-container">
+                    <table class="table table-hover">
+                        <thead><tr><th>No</th><th>Text</th><th>Label</th></tr></thead>
+                        <tbody>
+                        {% for news in hasil.realtime_news %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ news.text[:80] if news.text else '-' }}...</td>
+                            <td>
+                                {% if news.label == 1 %}<span class="badge-hoax">Hoaks</span>
+                                {% else %}<span class="badge-valid">Valid</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}  ← TUTUP if hasil.data DI SINI
+
+    <!-- PREVIEW DATASET (selalu tampil, tidak bergantung pipeline) -->
+    <hr style="border-color:#e2e8f0;margin-bottom:28px;">
+    <div class="section-title">👁️ Preview Dataset (10 Baris Pertama)</div>
+
+    {% if preview %}
+    <div class="table-card mb-4">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div class="chart-title" style="margin-bottom:0;">Dataset: DataHoaxIndonesia_Cleaned.csv</div>
+            <span style="background:#eff6ff;color:#2563eb;border:1.5px solid #bfdbfe;
+                         border-radius:20px;padding:4px 14px;font-size:12px;font-weight:700;">
+                {{ stats.total }} baris total
+            </span>
+        </div>
+        <div class="table-container">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        {% for key in preview[0].keys() %}
+                            {% if key != 'label' %}<th>{{ key }}</th>{% endif %}
+                        {% endfor %}
+                        <th>Label</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for row in preview %}
+                <tr>
+                    <td style="color:#94a3b8;font-weight:600;">{{ loop.index }}</td>
+                    {% for key, val in row.items() %}
+                        {% if key != 'label' %}
+                        <td style="max-width:300px;">
+                            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px;"
+                                 title="{{ val }}">
+                                {{ val[:100] if val and val|string|length > 100 else val if val else '-' }}
+                            </div>
+                        </td>
+                        {% endif %}
+                    {% endfor %}
+                    <td>
+                        {% if row.label == 1 %}
+                        <span class="badge-hoax">⚠️ Hoaks</span>
+                        {% else %}
+                        <span class="badge-valid">✅ Valid</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;
+                    padding:12px 16px;margin-top:16px;font-size:13px;color:#64748b;
+                    display:flex;gap:24px;flex-wrap:wrap;">
+            <span>📁 <strong style="color:#1e293b;">Total:</strong> {{ stats.total }} baris</span>
+            <span>⚠️ <strong style="color:#ef4444;">Hoaks:</strong> {{ stats.hoaks }}</span>
+            <span>✅ <strong style="color:#16a34a;">Valid:</strong> {{ stats.valid }}</span>
+            <span>📈 <strong style="color:#7c3aed;">Hoax Rate:</strong> {{ stats.rate }}%</span>
+        </div>
+    </div>
+    {% else %}
+    <div class="warn-box mb-4">
+        ⚠️ Dataset tidak ditemukan di <code>dataset/DataHoaxIndonesia_Cleaned.csv</code>.
+    </div>
+    {% endif %}
+
+</div> ← penutup .main
+
+<script>
+// ── TAB SWITCHER ──
+function switchTab(tab, btn) {
+    document.getElementById('tab-nb').style.display  = tab === 'nb'  ? '' : 'none';
+    document.getElementById('tab-svm').style.display = tab === 'svm' ? '' : 'none';
+    document.querySelectorAll('.nav-tabs .nav-link').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+// ── CHART DISTRIBUSI ──
+const stats = {
+    valid: {{ stats.valid | default(0) }},
+    hoaks: {{ stats.hoaks | default(0) }}
+};
+const ctxD = document.getElementById('chartDistribusi');
+if (ctxD) {
+    new Chart(ctxD, {
+        type: 'doughnut',
+        data: {
+            labels: ['Valid', 'Hoaks'],
+            datasets: [{ data: [stats.valid, stats.hoaks], backgroundColor: ['#22c55e', '#ef4444'], borderWidth: 0 }]
+        },
+        options: { responsive: true, cutout: '65%', plugins: { legend: { position: 'bottom' } } }
+    });
+}
+
+// ── CHART AKURASI ──
+{% if hasil and hasil.acc_nb %}
+const ctxA = document.getElementById('chartAkurasi');
+if (ctxA) {
+    new Chart(ctxA, {
+        type: 'bar',
+        data: {
+            labels: ['Naive Bayes', 'SVM'],
+            datasets: [{
+                label: 'Accuracy (%)',
+                data: [
+                    {{ (hasil.acc_nb * 100) | round(2) }},
+                    {{ (hasil.acc_svm * 100) | round(2) }}
+                ],
+                backgroundColor: ['#2563eb', '#22c55e'],
+                borderRadius: 12
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+// ── CONFUSION MATRIX NB ──
+const cmNBData = {{ hasil.cm_nb | tojson }};
+const ctxCmNB = document.getElementById('cmNB');
+if (ctxCmNB && cmNBData) {
+    new Chart(ctxCmNB, {
+        type: 'bar',
+        data: {
+            labels: ['Valid (0)', 'Hoaks (1)'],
+            datasets: [
+                { label: 'Prediksi Valid', data: [cmNBData[0][0], cmNBData[1][0]], backgroundColor: '#bfdbfe', borderRadius: 8 },
+                { label: 'Prediksi Hoaks', data: [cmNBData[0][1], cmNBData[1][1]], backgroundColor: '#1d4ed8', borderRadius: 8 }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: { x: { title: { display: true, text: 'Aktual' } }, y: { beginAtZero: true } },
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
+
+// ── CONFUSION MATRIX SVM ──
+const cmSVMData = {{ hasil.cm_svm | tojson }};
+const ctxCmSVM = document.getElementById('cmSVM');
+if (ctxCmSVM && cmSVMData) {
+    new Chart(ctxCmSVM, {
+        type: 'bar',
+        data: {
+            labels: ['Valid (0)', 'Hoaks (1)'],
+            datasets: [
+                { label: 'Prediksi Valid', data: [cmSVMData[0][0], cmSVMData[1][0]], backgroundColor: '#bfdbfe', borderRadius: 8 },
+                { label: 'Prediksi Hoaks', data: [cmSVMData[0][1], cmSVMData[1][1]], backgroundColor: '#1d4ed8', borderRadius: 8 }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: { x: { title: { display: true, text: 'Aktual' } }, y: { beginAtZero: true } },
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
+{% endif %}
+</script>
+
+</body>
+</html>

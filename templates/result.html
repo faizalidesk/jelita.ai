@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hasil</title>
+</head>
+<body>
+
+<h1>Hasil Pipeline</h1>
+
+<p>Akurasi Naive Bayes: {{ hasil.acc_nb }}</p>
+<p>Akurasi SVM: {{ hasil.acc_svm }}</p>
+
+<br>
+
+<img src="{{ url_for('static', filename='chart1.png') }}">
+<img src="{{ url_for('static', filename='chart2.png') }}">
+<img src="{{ url_for('static', filename='chart3.png') }}">
+
+<br><br>
+
+<a href="/">Kembali</a>
+
+</body>
+</html>
